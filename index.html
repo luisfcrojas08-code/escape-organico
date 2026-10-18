@@ -560,6 +560,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .livechip::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--on3)}
 .livechip.on{background:#fff;color:var(--green-d)}.livechip.on::before{background:var(--green);box-shadow:0 0 0 0 rgba(38,179,106,.6);animation:latir 1.6s infinite}
 .livechip.wait::before{background:var(--amber)}
+.livechip.bad{background:#fff;color:var(--red)}.livechip.bad::before{background:var(--red)}
 @keyframes latir{70%{box-shadow:0 0 0 8px rgba(38,179,106,0)}100%{box-shadow:0 0 0 0 rgba(38,179,106,0)}}
 .barra{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .contador{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.25);color:#fff;border-radius:14px;padding:10px 16px;font:600 18px var(--f-juego)}
@@ -574,7 +575,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .projhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:#fff}
 .projhead h2{font-size:clamp(32px,5vw,64px);text-shadow:0 5px 0 rgba(0,0,0,.22)}
 .ranking{display:flex;flex-direction:column;gap:10px}
-.rk{display:grid;grid-template-columns:52px auto 1fr auto auto;gap:12px;align-items:center;background:#fff;color:var(--ink);border-radius:16px;padding:10px 14px;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.rk{display:grid;grid-template-columns:52px 1fr auto auto;gap:12px;align-items:center;background:#fff;color:var(--ink);border-radius:16px;padding:10px 14px;box-shadow:0 4px 0 rgba(0,0,0,.18)}
 .card .rk{background:var(--soft);box-shadow:0 3px 0 var(--line)}
 .rk .pos{font:700 26px/1 var(--f-juego);text-align:center}
 .rk .nm{min-width:0;display:flex;flex-direction:column;gap:3px}
@@ -626,9 +627,43 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .eqav{display:block;margin:-8px auto 2px;width:64px}
 .eq{text-align:center}
 .rkav{display:grid;place-items:center;min-width:42px}
+.livestate{font:600 15px var(--f-juego);padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.14);color:var(--on2)}
+.livestate.on{background:#fff;color:var(--green-d)}.livestate.bad{background:#fff;color:var(--red)}.livestate.wait{color:#FFE29A}
+.ver{font:500 12px var(--f-body);color:var(--on3)}
 @media (prefers-reduced-motion:reduce){
   *,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
 }
+
+.btn.danger{--c:var(--red);--b:#9E1631;--t:#fff}
+.rk .nmtop{display:flex;align-items:baseline;gap:10px;min-width:0}
+.rk .nmtop small{flex:1;min-width:0}
+.track{position:relative;height:16px;margin:32px 28px 4px 0;background:var(--soft2);border-radius:999px;box-shadow:inset 0 2px 0 rgba(0,0,0,.12)}
+.ranking.big .track{height:20px;margin-top:46px}
+.fillbar{position:absolute;inset:0 auto 0 0;width:0;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width 1.1s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.fillbar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-45deg,rgba(255,255,255,.28) 0 10px,transparent 10px 20px);animation:rayas 1s linear infinite}
+@keyframes rayas{to{background-position:28px 0}}
+.rk.lider .fillbar{background:linear-gradient(90deg,#FFB21E,#FF7A1E)}
+.runner{position:absolute;bottom:2px;left:0;transform:translateX(-50%);transition:left 1.1s cubic-bezier(.2,.8,.2,1);line-height:0;animation:trote .55s ease-in-out infinite;transform-origin:50% 100%;pointer-events:none}
+.runner svg{display:block}
+.runner.moving{animation:corre .28s ease-in-out 4,trote .55s ease-in-out 1.12s infinite}
+@keyframes trote{0%,100%{transform:translateX(-50%) translateY(0) rotate(-3deg)}50%{transform:translateX(-50%) translateY(-4px) rotate(3deg)}}
+@keyframes corre{0%,100%{transform:translateX(-50%) translateY(0) rotate(-9deg)}50%{transform:translateX(-50%) translateY(-11px) rotate(9deg)}}
+.meta{position:absolute;right:-28px;top:50%;transform:translateY(-55%);font-size:22px}
+.ptsbox{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.ptsbox .dec{font:600 13px var(--f-juego);color:#fff;background:var(--green);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.bigdec{font:700 clamp(44px,12vw,72px)/1 var(--f-juego);color:var(--green-d)}
+.podio{display:flex;justify-content:center;align-items:flex-end;gap:clamp(8px,3vw,28px);margin:6px 0 4px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:4px;width:clamp(96px,26vw,190px);text-align:center;animation:entra .6s both}
+.pod.p1{animation-delay:.5s}.pod.p2{animation-delay:.25s}
+.podn{font:700 19px/1.1 var(--f-juego);color:#fff;overflow-wrap:anywhere}
+.podp{font:600 14px var(--f-juego);color:var(--on2)}
+.podbase{width:100%;display:grid;place-items:center;font:700 40px var(--f-juego);color:#fff;border-radius:14px 14px 4px 4px;box-shadow:0 6px 0 rgba(0,0,0,.22)}
+.p1 .podbase{height:130px;background:#FFB21E}.p2 .podbase{height:95px;background:#9AA7C7}.p3 .podbase{height:70px;background:#D07A3A}
+.statrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0}
+.statrow div{background:rgba(255,255,255,.12);border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.statrow b{font:700 30px var(--f-juego);color:#fff}.statrow span{font-size:13px;color:var(--on2)}
+@media (max-width:600px){.rk{grid-template-columns:34px 1fr auto;gap:8px}.rk .est{display:none}.rk .pos{font-size:20px}}
+@media (prefers-reduced-motion:reduce){.runner,.runner.moving,.fillbar::after{animation:none}.fillbar,.runner{transition:none}}
 </style>
 </head>
 <body>
@@ -1343,6 +1378,7 @@ document.addEventListener("pointerdown", e => {
 /* ================= EN VIVO (Firebase Realtime Database, opcional) =================
    Para activarlo, pega aquí la configuración de tu proyecto de Firebase (ver la guía).
    Sin configuración el juego funciona igual, con la clave de inicio y el mensaje de resultados. */
+const APP_VERSION = "6.4";
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAdVsjSnywjsFuHGxLykl4coDFNQDqLgWA",
   authDomain: "escape-organico.firebaseapp.com",
@@ -1353,7 +1389,8 @@ const FIREBASE_CONFIG = {
   appId: "1:992275537891:web:a05f8f497dcca53b40cad6"
 };
 const LIVE = (() => {
-  let db = null, tried = null, connected = false; const subs = new Set();
+  let db = null, tried = null, connected = false, lastErr = ""; const subs = new Set();
+  const fail = e => { lastErr = (e && (e.code || e.message)) || "error"; try{ console.warn("Firebase:", e); }catch(_){} subs.forEach(f => { try{ f(); }catch(x){} }); };
   const inClaude = !!(window.claude && window.claude.use) && !window.FIREBASE_CONFIG_OVERRIDE;
   const cfg = () => inClaude ? null : (window.FIREBASE_CONFIG_OVERRIDE || FIREBASE_CONFIG);
   const load = src => new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
@@ -1369,7 +1406,7 @@ const LIVE = (() => {
         db = firebase.database();
         db.ref(".info/connected").on("value", s => { connected = !!s.val(); subs.forEach(f => { try{ f(); }catch(e){} }); });
         return true;
-      }catch(e){ db = null; return false; } })();
+      }catch(e){ db = null; lastErr = "sdk"; subs.forEach(f => { try{ f(); }catch(x){} }); return false; } })();
     return tried;
   }
   const key = id => String(id).replace(/\./g, "_");
@@ -1381,13 +1418,17 @@ const LIVE = (() => {
   }
   let pushT = null;
   return {
+    get error(){ return lastErr; },
     init, get on(){ return !!db && connected; }, get connected(){ return !!db && connected; }, get configured(){ return !!cfg(); }, onChange(f){ subs.add(f); return () => subs.delete(f); },
     async join(){ if (!S || practice) return; if (!S.tid){ S.tid = Date.now().toString(36) + Math.random().toString(36).slice(2,7); save(); }
-      if (await init()) try{ teamRef().set(Object.assign(summary(), {joined:Date.now()})); }catch(e){} },
-    push(){ if (!S || practice || !S.tid) return; clearTimeout(pushT); pushT = setTimeout(async () => { if (await init()) try{ teamRef().update(summary()); }catch(e){} }, 250); },
-    async watchStart(sala, fn){ if (!(await init())) return () => {}; const ref = db.ref(`salas/${sala}/estado/started`); const h = s => fn(!!s.val()); ref.on("value", h); return () => ref.off("value", h); },
-    async setStarted(sala, v){ if (await init()) try{ await db.ref(`salas/${sala}/estado`).set({started:!!v, t:Date.now()}); }catch(e){} },
-    async watchTeams(sala, fn){ if (!(await init())) return () => {}; const ref = db.ref(`salas/${sala}/equipos`); const h = s => fn(s.val() || {}); ref.on("value", h); return () => ref.off("value", h); },
+      if (await init()) try{ teamRef().set(Object.assign(summary(), {joined:Date.now()})).catch(fail); }catch(e){ fail(e); } },
+    push(){ if (!S || practice || !S.tid) return; clearTimeout(pushT); pushT = setTimeout(async () => { if (await init()) try{ teamRef().update(summary()).catch(fail); }catch(e){ fail(e); } }, 250); },
+    async watchStart(sala, fn){ if (!(await init())) return () => {}; const ref = db.ref(`salas/${sala}/estado/started`); const h = s => fn(!!s.val()); ref.on("value", h, fail); return () => ref.off("value", h); },
+    async watchEstado(sala, fn){ if (!(await init())) return () => {}; const ref = db.ref(`salas/${sala}/estado`); const h = s => fn(s.val() || {}); ref.on("value", h, fail); return () => ref.off("value", h); },
+    async patchEstado(sala, patch){ if (await init()) try{ await db.ref(`salas/${sala}/estado`).update(patch); }catch(e){ fail(e); } },
+    async teamsOnce(sala){ if (!(await init())) return null; try{ const s = await db.ref(`salas/${sala}/equipos`).once("value"); return s.val() || {}; }catch(e){ return null; } },
+    async setStarted(sala, v){ if (await init()) try{ await db.ref(`salas/${sala}/estado`).update({started:!!v, ended:false, t:Date.now()}); }catch(e){ fail(e); } },
+    async watchTeams(sala, fn){ if (!(await init())) return () => {}; const ref = db.ref(`salas/${sala}/equipos`); const h = s => { lastErr = ""; fn(s.val() || {}); }; ref.on("value", h, fail); return () => ref.off("value", h); },
     async removeTeam(sala, tid){ if (await init()) try{ await db.ref(`salas/${sala}/equipos/${tid}`).remove(); }catch(e){} },
     async findTeam(sala, name){ if (!(await init())) return null; try{ const snap = await db.ref(`salas/${sala}/equipos`).once("value"); const all = snap.val() || {}, want = norm(name);
         const hit = Object.entries(all).find(([,t]) => t && norm(t.team) === want); return hit ? {tid:hit[0], data:hit[1]} : null; }catch(e){ return null; } },
@@ -1397,7 +1438,7 @@ const LIVE = (() => {
 })();
 function liveTeamsAsResults(){
   return Object.values(T.live || {}).filter(t => t && t.team).map(t => ({ s:T.sala, e:t.team, m:t.members||[], av:t.av||null, r:Q.map(q => (t.res||{})[LIVE.key(q.id)] || 0),
-    h:t.hints||0, p:t.ptime||PHASES.map(()=>0), x:t.score||0, d:t.done?1:0, live:1 }));
+    h:t.hints||0, p:t.ptime||PHASES.map(()=>0), x:t.score||0, d:t.done?1:0, ph:t.phase||0, st:t.started!==false, live:1 }));
 }
 
 /* ================= CELEBRACIÓN FINAL ================= */
@@ -1528,6 +1569,7 @@ function viewHome(){
   app().innerHTML = `<div class="wrap fadein">
    <header class="hero"><div class="logo">${LOGO}</div>
      <h1>Escape Orgánico</h1>
+     <p class="ver">Versión ${APP_VERSION}</p>
      <p>Seis laboratorios de química orgánica: aromáticos, estereoisomería, haluros, alcoholes y éteres. Hemo, morfina, salbutamol, anestésicos, aromas y fármacos retirados. El docente da inicio y cada equipo avanza a su ritmo.</p>
    </header>
    <div class="grid2">
@@ -1652,8 +1694,10 @@ function viewLobby(){
         <div class="avopts" id="avopts" role="radiogroup"></div>
         <button type="button" class="btn ghost" id="avrand">Al azar</button>
         <p>Su personaje los acompaña en todos los laboratorios y aparece en la pantalla del salón.</p>
+        <p class="ver" style="color:var(--ink3)">Versión ${APP_VERSION}</p>
       </section>
       <div class="esperando">Esperando que el docente dé inicio<span class="puntos3" aria-hidden="true"><span></span><span></span><span></span></span></div>
+      <p class="livestate" id="livestate" role="status"></p>
       <form class="tarjeta" id="startf" novalidate style="animation-delay:.2s">
         <h2>Clave de inicio</h2>
         <label class="sr" for="kini">Clave de inicio</label>
@@ -1680,7 +1724,8 @@ function viewLobby(){
   const goStart = () => { if (lobbyStop){ lobbyStop(); lobbyStop = null; } if (S.started || document.querySelector(".cuenta")) return; countdown(() => { S.started = true; S.briefed = true; save(); LIVE.push(); render(); }); };
   if (lobbyStop){ lobbyStop(); lobbyStop = null; }
   LIVE.watchStart(S.sala, on => { if (on && !S.started && mode==="student") goStart(); }).then(stop => { lobbyStop = stop; });
-  LIVE.init().then(ok => { if (ok){ LIVE.join(); const el = $("#livenote"); if (el) el.hidden = !LIVE.on; } });
+  paintLiveState();
+  LIVE.init().then(ok => { if (ok){ LIVE.join(); const el = $("#livenote"); if (el) el.hidden = !LIVE.on; } paintLiveState(); });
   if (!S.av){ S.av = avRandom(); save(); }
   const paintOpts = () => { $("#avopts").innerHTML = AV[avCat].map(([v,t]) => { const on = S.av[avCat]===v; const prev = Object.assign({}, S.av, {[avCat]:v});
       return `<button type="button" class="avopt${on?" on":""}" role="radio" aria-checked="${on}" data-avv="${v}" title="${esc(t)}">${avCat==="color" ? `<i style="background:${v}"></i>` : avatarSVG(prev, {size:58, fill:.55})}<span>${esc(t)}</span></button>`; }).join("");
@@ -1692,6 +1737,12 @@ function viewLobby(){
   $("#fixbtn").onclick = () => { const v = $("#fixsala").value.replace(/\D/g,""); if (v.length>=4){ S.sala=v; save(); toast("Sala actualizada"); render(); } };
   $("#resetbtn").onclick = () => { $("#resetbox").innerHTML = `<div class="confirm"><p>Se borrará el registro de este teléfono.</p><div class="row"><button type="button" class="btn primary" id="rsy">Sí, borrar</button><button type="button" class="btn ghost" id="rsn">Cancelar</button></div></div>`; $("#rsy").onclick=()=>{ drop(SKEY); S=null; mode="home"; render(); }; $("#rsn").onclick=()=>{$("#resetbox").innerHTML="";}; };
 }
+function paintLiveState(){ const el = document.getElementById("livestate"); if (!el || !S) return; const e = LIVE.error;
+  const st = !LIVE.configured ? ["off", `Sala ${S.sala} · sin conexión en vivo: usen la clave de inicio`]
+    : /permission|PERMISSION/.test(e) ? ["bad", `Sala ${S.sala} · Firebase niega el acceso (avísenle al docente)`]
+    : e==="sdk" ? ["bad", `Sala ${S.sala} · no hay conexión en vivo: usen la clave de inicio`]
+    : LIVE.on ? ["on", `Conectados con el docente · sala ${S.sala}`] : ["wait", `Conectando con el docente · sala ${S.sala}…`];
+  el.className = "livestate " + st[0]; el.textContent = st[1]; }
 function countdown(fin, finalText){
   const ov = document.createElement("div"); ov.className = "cuenta"; ov.setAttribute("role","status"); document.body.appendChild(ov); let n = 3;
   const tone = (f, d) => { try{ SND.beep(f, d); }catch(e){} };
@@ -1715,7 +1766,36 @@ function animateScore(){
 }
 
 /* ================= FLUJO ESTUDIANTE ================= */
+let stuWatch = null, stuSala = null;
+function ensureStudentLive(){
+  if (practice || !S || !S.sala || mode!=="student" || stuSala === S.sala) return; if (stuWatch){ stuWatch(); stuWatch = null; } stuSala = S.sala;
+  LIVE.watchEstado(S.sala, e => { if (!S || practice) return; const ended = !!e.ended;
+    if (ended === !!S.closed && (!ended || S.bono === e.bono)) return;
+    S.closed = ended; if (ended) S.bono = e.bono ?? 0.3; save(); LIVE.push();
+    if (ended && sheetQ){ killSketch(); document.getElementById("sheetroot").innerHTML = ""; document.body.style.overflow = ""; sheetQ = null; document.removeEventListener("keydown", escClose); }
+    if (mode==="student") render(); }).then(stop => { stuWatch = stop; });
+}
+function viewClosed(){
+  const max = Q.reduce((s,q)=>s+maxPts(q),0), sc = totalScore(), dec = bonusFor(sc, S.bono ?? 0.3);
+  app().innerHTML = `${hud()}<div class="wrap fadein"><div class="finalhead">
+      <div class="finav vivo ${S.done?"dance":""}">${myAvatar({size:170, mood: sc >= max*.5 ? "ok" : "wow"})}</div>
+      <span class="labtag" style="align-self:center">El docente cerró la sala</span>
+      <h2 style="font-size:clamp(36px,9vw,60px);color:#fff;text-shadow:0 5px 0 rgba(0,0,0,.22)">${S.done ? "¡Escaparon a tiempo!" : "¡Se acabó el tiempo!"}</h2>
+      <div class="bigscore num">${sc}</div><p class="muted num">puntos de ${max} posibles</p></div>
+    <div class="grid2">
+      <div class="card"><span class="eyebrow">Décimas para el parcial</span><div class="bigdec">+${String(dec).replace(".", ",")}</div><p>Las suma el docente a la nota del parcial, para cada integrante del equipo.</p></div>
+      <div class="card"><span class="eyebrow">Su lugar en la sala</span><div class="bigdec" id="mipuesto">…</div><p id="mipuesto2">Calculando…</p></div>
+    </div>
+    <div class="card"><span class="eyebrow">Para repasar</span><p>Revisen en casa los retos que les costaron: los temas están en el informe de cada laboratorio y vuelven en el parcial.</p></div>
+  </div>`;
+  LIVE.teamsOnce(S.sala).then(all => { const p1 = $("#mipuesto"), p2 = $("#mipuesto2"); if (!p1) return;
+    if (!all){ p1.textContent = "—"; p2.textContent = "El puesto se ve en la pantalla del salón."; return; }
+    const L = Object.entries(all).filter(([,t])=>t&&t.team).sort(([,x],[,y])=>(y.score||0)-(x.score||0)); const k = L.findIndex(([id])=>id===S.tid);
+    p1.textContent = k>=0 ? (k+1) + "°" : "—"; p2.textContent = k>=0 ? `de ${L.length} equipos` : "El puesto se ve en la pantalla del salón."; });
+}
 function viewStudent(){
+  ensureStudentLive();
+  if (S.closed) return viewClosed();
   if (!S.started) return viewLobby();
   if (S.done) return viewFinal();
   if (!S.doors[S.phase]) return viewDoor();
@@ -2264,7 +2344,7 @@ function viewTeacher(){
   const tabs = [["proyector","Proyector"],["solucionario","Solucionario"],["resultados","Resultados"],["practica","Práctica libre"],["guia","Guía de la sesión"]];
   app().innerHTML = `<div class="wrap wide fadein">
     <div class="thead">
-      <div class="lobby" style="padding:0;align-items:flex-start;text-align:left"><div class="logo" style="font-size:26px">${LOGO}<span>Panel docente</span></div></div>
+      <div class="lobby" style="padding:0;align-items:flex-start;text-align:left"><div class="logo" style="font-size:26px">${LOGO}<span>Panel docente <small class="ver" style="color:var(--on2)">v${APP_VERSION}</small></span></div></div>
       <div class="row"><span class="livechip" id="livechip"></span><div class="salachip"><span>Sala</span><b class="salabig">${esc(T.sala)}</b></div><button class="btn ghost" id="nsala">Nueva sala</button><button class="btn ghost" id="exit">Salir</button></div>
     </div>
     <div id="nsbox"></div>
@@ -2272,23 +2352,29 @@ function viewTeacher(){
     <div id="tpanel"></div></div>`;
   app().querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{ T.tab=b.dataset.tab; saveT(); viewTeacher(); });
   $("#exit").onclick = () => { mode = S&&S.team ? "student" : "home"; render(); };
-  $("#nsala").onclick = () => { $("#nsbox").innerHTML = `<div class="confirm"><p>Una sala nueva cambia el código y la clave de inicio. Los equipos registrados en la sala ${esc(T.sala)} tendrían que registrarse otra vez.</p><div class="row"><button class="btn primary" id="nsy">Crear sala nueva</button><button class="btn ghost" id="nsn">Cancelar</button></div></div>`; $("#nsy").onclick=()=>{ T.sala=newSala(); T.reveal={}; T.stage="sala"; T.started=false; saveT(); tLiveSala = null; viewTeacher(); }; $("#nsn").onclick=()=>{$("#nsbox").innerHTML="";}; };
+  $("#nsala").onclick = () => { $("#nsbox").innerHTML = `<div class="confirm"><p>Una sala nueva cambia el código y la clave de inicio. Los equipos registrados en la sala ${esc(T.sala)} tendrían que registrarse otra vez.</p><div class="row"><button class="btn primary" id="nsy">Crear sala nueva</button><button class="btn ghost" id="nsn">Cancelar</button></div></div>`; $("#nsy").onclick=()=>{ T.sala=newSala(); T.reveal={}; T.stage="sala"; T.started=false; T.ended=false; saveT(); tLiveSala = null; viewTeacher(); }; $("#nsn").onclick=()=>{$("#nsbox").innerHTML="";}; };
   ({proyector:tProjector, solucionario:tSolutions, resultados:tResults, practica:tPractice, guia:tGuide})[T.tab]();
   ensureTeacherLive(); paintLiveChip();
 }
 let tLiveStop = null, tLiveSala = null, tRenderT = null; const tSeen = new Set();
 function paintLiveChip(){ const el = $("#livechip"); if (!el) return;
-  const st = !LIVE.configured ? ["off","Modo sin conexión (con clave)"] : LIVE.connected ? ["on","En vivo"] : ["wait","Conectando…"];
+  const err = LIVE.error;
+  const st = !LIVE.configured ? ["off","Modo sin conexión (con clave)"]
+    : /permission|PERMISSION/.test(err) ? ["bad","Firebase niega el acceso: revisa y publica las Reglas"]
+    : err==="sdk" ? ["bad","No cargó Firebase: revisa la conexión a internet"]
+    : LIVE.connected ? ["on","En vivo"] : ["wait","Conectando…"];
   el.className = "livechip " + st[0]; el.textContent = st[1]; }
 let liveWas = null;
 LIVE.onChange(() => { paintLiveChip(); const now = LIVE.on; if (now === liveWas) return; liveWas = now;
   if (mode==="teacher" && teacherOK && !document.querySelector(".cuenta")){ if (T.tab==="proyector") tProjector(); else if (T.tab==="resultados" && !(document.activeElement && document.activeElement.id==="paste")) tResults(); }
-  const ln = document.getElementById("livenote"); if (ln) ln.hidden = !now; });
+  const ln = document.getElementById("livenote"); if (ln) ln.hidden = !now; paintLiveState(); });
 function ensureTeacherLive(){
   if (tLiveSala === T.sala) return; if (tLiveStop){ tLiveStop(); tLiveStop = null; } tLiveSala = T.sala; T.live = {}; tSeen.clear();
   LIVE.watchTeams(T.sala, teams => { T.live = teams; clearTimeout(tRenderT);
     tRenderT = setTimeout(() => { if (mode!=="teacher" || !teacherOK || document.querySelector(".cuenta")) return;
-      if (T.tab==="proyector") tProjector(); else if (T.tab==="resultados" && !(document.activeElement && document.activeElement.id==="paste")) tResults(); }, 300); })
+      if (T.tab==="proyector" && T.stage==="ranking" && $("#rankboard")){ RANKS.rankboard.list = null; renderRankRows($("#rankboard"), liveList(), true); const ne = $("#neq"); if (ne) ne.textContent = liveList().length; }
+      else if (T.tab==="proyector" && (T.stage!=="cierre" || !document.querySelector("#endbox .confirm"))) tProjector();
+      else if (T.tab==="resultados" && !(document.activeElement && document.activeElement.id==="paste")) tResults(); }, 300); })
     .then(stop => { tLiveStop = stop; paintLiveChip(); });
 }
 const EQC = ["#FF5E8A","#2FB8FF","#FFB020","#2CC48A","#9B6BFF","#FF7A45"];
@@ -2299,24 +2385,56 @@ function teamChips(){
   return L.map((t,k) => { const nuevo = !tSeen.has(t.id); tSeen.add(t.id); if (nuevo && k>=0) setTimeout(()=>SND.play("tap"), 0);
     return `<div class="eq${nuevo?" nuevo":""}" style="background:${EQC[k%EQC.length]};--r:${((k%3)-1)*2}deg">${t.av ? `<span class="eqav">${avatarSVG(t.av,{size:64, fill:.5})}</span>` : ""}${esc(t.team)}<small>${(t.members||[]).length} integrante${(t.members||[]).length===1?"":"s"}</small></div>`; }).join("");
 }
-let rankPos = {};
-function rankingHTML(big, list){
-  const L = (list || liveList()).sort((x,y)=>(y.score||0)-(x.score||0) || (x.t||0)-(y.t||0)), max = Q.reduce((s,q)=>s+maxPts(q),0);
-  if (!L.length) return `<p class="vacio">${LIVE.on ? "Todavía no hay equipos en esta sala." : "El ranking en vivo necesita la conexión con Firebase (ver la guía). Mientras tanto usa «Resultados» con los mensajes de los equipos."}</p>`;
-  const medal = k => k===0?"🥇":k===1?"🥈":k===2?"🥉":String(k+1);
-  return `<div class="ranking${big?" big":""}">${L.map((t,k)=>{ const pct = Math.round(100*(t.score||0)/max);
-    const est = t.done ? `<span class="res y">Terminó</span>` : t.started ? `<span class="res m">Lab ${t.phase||1}</span>` : `<span class="res n">En sala</span>`;
-    return `<div class="rk" data-rk="${esc(t.id)}"><b class="pos">${medal(k)}</b>${t.av ? `<span class="rkav">${avatarSVG(t.av,{size:big?56:42, fill:.2+.75*pct/100, mood:k===0?"ok":undefined})}</span>` : `<span class="rkav"></span>`}<div class="nm"><b>${esc(t.team)}</b><small>${esc((t.members||[]).join(", "))}</small><div class="bar"><i style="width:${pct}%"></i></div></div>${est}<b class="pts num">${t.score||0}</b></div>`; }).join("")}</div>`;
+const RANKS = {};
+function rankingHTML(big, list, id){ id = id || (big ? "rankboard" : "rankboard2"); RANKS[id] = {list, big};
+  return `<div class="ranking${big?" big":""}" id="${id}" data-rkboard="${id}"></div>`; }
+function fillRankings(root){ (root||document).querySelectorAll("[data-rkboard]").forEach(el => { const R = RANKS[el.dataset.rkboard]; if (R) renderRankRows(el, R.list || liveList(), R.big); }); }
+function renderRankRows(el, list, big){
+  const max = Q.reduce((s,q)=>s+maxPts(q),0), L = [...list].sort((x,y)=>(y.score||0)-(x.score||0) || (x.t||0)-(y.t||0));
+  if (!L.length){ el.innerHTML = `<p class="vacio">${LIVE.on ? "Todavía no hay equipos en esta sala." : "El ranking en vivo necesita la conexión con Firebase. Mientras tanto usa «Resultados» con los mensajes de los equipos."}</p>`; return; }
+  const vacio = el.querySelector(".vacio"); if (vacio) vacio.remove();
+  const before = {}; el.querySelectorAll(".rk").forEach(r => before[r.dataset.rk] = r.getBoundingClientRect().top);
+  const medal = k => k===0?"🥇":k===1?"🥈":k===2?"🥉":String(k+1), keep = new Set();
+  L.forEach((t,k) => { const id = String(t.id); keep.add(id); const pct = Math.max(0, Math.min(100, 100*(t.score||0)/max));
+    let r = el.querySelector(`.rk[data-rk="${CSS.escape(id)}"]`), nuevo = false;
+    if (!r){ nuevo = true; r = document.createElement("div"); r.className = "rk"; r.dataset.rk = id;
+      r.innerHTML = `<b class="pos"></b><div class="nm"><div class="nmtop"><b class="tn"></b><small class="mb"></small></div><div class="track"><i class="fillbar"></i><span class="runner"></span><span class="meta" aria-hidden="true">🏁</span></div></div><span class="est"></span><div class="ptsbox"><b class="pts num">0</b><small class="dec"></small></div>`;
+      r.dataset.score = "0"; r.dataset.pct = "0"; }
+    r.querySelector(".pos").textContent = medal(k);
+    r.querySelector(".tn").textContent = t.team; r.querySelector(".mb").textContent = (t.members||[]).join(", ");
+    r.querySelector(".fillbar").style.width = pct + "%";
+    const run = r.querySelector(".runner"); run.style.left = `calc(${pct}% - ${pct*0.0}px)`;
+    const avKey = JSON.stringify(t.av||{}) + (k===0) + Math.round(pct/5);
+    if (run.dataset.k !== avKey){ run.dataset.k = avKey; run.innerHTML = t.av ? avatarSVG(t.av, {size: big ? 46 : 32, fill: .2 + .75*pct/100, mood: k===0 ? "ok" : undefined}) : ""; }
+    if (+r.dataset.pct !== Math.round(pct) && !nuevo){ run.classList.remove("moving"); void run.offsetWidth; run.classList.add("moving"); }
+    r.dataset.pct = Math.round(pct);
+    r.querySelector(".est").innerHTML = t.done ? `<span class="res y">Terminó</span>` : t.started ? `<span class="res m">Lab ${t.phase||1}</span>` : `<span class="res n">En sala</span>`;
+    r.querySelector(".dec").textContent = "+" + String(bonusFor(t.score||0)).replace(".", ",") + " décimas";
+    const ptsEl = r.querySelector(".pts"), from = +r.dataset.score, to = t.score||0; r.dataset.score = to;
+    if (from !== to && !reduced()){ const t0 = performance.now(), d = 900; const step = tt => { const q = Math.min(1,(tt-t0)/d); ptsEl.textContent = Math.round(from + (to-from)*(1-Math.pow(1-q,3))); if (q<1) requestAnimationFrame(step); }; requestAnimationFrame(step); } else ptsEl.textContent = to;
+    r.classList.toggle("lider", k===0);
+    el.appendChild(r);
+    if (nuevo && r.animate && !reduced()) r.animate([{transform:"scale(.85)",opacity:0},{transform:"none",opacity:1}],{duration:450,easing:"cubic-bezier(.3,1.5,.5,1)"});
+  });
+  el.querySelectorAll(".rk").forEach(r => { if (!keep.has(r.dataset.rk)) r.remove(); });
+  if (!reduced()) el.querySelectorAll(".rk").forEach(r => { const b = before[r.dataset.rk]; if (b === undefined || !r.animate) return; const dy = b - r.getBoundingClientRect().top; if (Math.abs(dy) > 2) r.animate([{transform:`translateY(${dy}px)`},{transform:"none"}],{duration:650,easing:"cubic-bezier(.2,.8,.2,1)"}); });
 }
-function animateRanking(){
-  const rows = document.querySelectorAll("[data-rk]"), now = {};
-  rows.forEach(r => { const id = r.dataset.rk, y = r.getBoundingClientRect().top; now[id] = y;
-    if (rankPos[id] !== undefined && !reduced() && r.animate){ const dy = rankPos[id] - y; if (Math.abs(dy) > 2) r.animate([{transform:`translateY(${dy}px)`},{transform:"none"}],{duration:600,easing:"cubic-bezier(.2,.8,.2,1)"}); }
-    else if (rankPos[id] === undefined && r.animate && !reduced()) r.animate([{transform:"scale(.8)",opacity:0},{transform:"none",opacity:1}],{duration:400,easing:"cubic-bezier(.3,1.5,.5,1)"}); });
-  rankPos = now;
+function allTeams(){
+  const parsed = parseResults(T.paste||""), liveT = liveTeamsAsResults(), seen = new Set(liveT.map(t => t.e + "|" + t.s));
+  return { teams:[...liveT, ...parsed.teams.filter(t => !seen.has(t.e + "|" + t.s))].sort((x,y)=>y.x-x.x), bad:parsed.bad, liveT };
+}
+const asRankList = teams => teams.map(t => ({id:t.e + "|" + t.s, team:t.e, members:t.m, av:t.av, score:t.x, done:!!t.d, started:t.st!==false, phase:t.ph || t.r.reduce((p,x,qi)=>x?Math.max(p,Q[qi].ph):p,1)}));
+function podiumHTML(teams){
+  const top = teams.slice(0,3), order = [1,0,2].filter(i => top[i]);
+  return `<div class="podio">${order.map(i => { const t = top[i]; return `<div class="pod p${i+1}"><div class="podav vivo ${i===0?"dance":""}">${t.av ? avatarSVG(t.av,{size: i===0?120:96, mood:"ok", fill:.2+.75*Math.max(0,t.x)/Q.reduce((s,q)=>s+maxPts(q),0)}) : ""}</div><b class="podn">${esc(t.e)}</b><span class="podp num">${t.x} pts · +${String(bonusFor(t.x)).replace(".", ",")}</span><div class="podbase">${i+1}</div></div>`; }).join("")}</div>`;
+}
+function closeSalaConfirm(box){
+  box.innerHTML = `<div class="confirm"><p><b>¿Finalizar la sala ${esc(T.sala)}?</b> Todos los celulares pasan a la pantalla final con sus puntos y sus décimas (máximo ${String(bonoMax()).replace(".", ",")}). Los equipos que no terminaron se califican con los puntos que tengan ahora.</p><div class="row"><button class="btn primary" id="endy">Sí, finalizar</button><button class="btn ghost" id="endn">Cancelar</button></div></div>`;
+  $("#endy").onclick = async () => { await LIVE.patchEstado(T.sala, {ended:true, endedAt:Date.now(), bono:bonoMax()}); T.ended = true; T.stage = "cierre"; saveT(); SND.play("fanfare"); tProjector(); };
+  $("#endn").onclick = () => { box.innerHTML = ""; };
 }
 function tProjector(){
-  if (T.stage!=="sala" && T.stage!=="ranking") T.stage = "sala";
+  if (!["sala","ranking","cierre"].includes(T.stage)) T.stage = "sala";
   const st = T.stage, n = liveList().length;
   let inner;
   if (st==="sala"){
@@ -2325,15 +2443,26 @@ function tProjector(){
         <div class="projtools" style="margin:0">${T.started ? `<button class="btn ghost" id="tunstart">Ocultar la clave</button><button class="btn cyan" id="toRank">Ver el ranking</button>` : `<button class="btn go big" id="tstart">Iniciar</button>`}<button class="btn ghost" id="tmus" aria-pressed="${!!tMusic.on}">Música: ${tMusic.on?"sí":"no"}</button><button class="btn ghost" id="fs">Pantalla completa</button></div></div>
       ${T.started ? `<div class="claveinicio"><span>Clave de inicio${LIVE.on?" (solo si a alguien no le arrancó solo)":""}</span><b>${esc(startKey(T.sala))}</b></div>` : ""}
       <div class="equipos">${teamChips()}</div>`;
+  } else if (st==="ranking"){
+    inner = `<div class="projhead"><h2>Ranking en vivo</h2><div class="contador"><b id="neq">${n}</b> equipo${n===1?"":"s"}</div></div>${rankingHTML(true)}
+      <div class="projtools"><button class="btn ghost" id="fs">Pantalla completa</button><button class="btn danger" id="endsala">Finalizar sala</button></div><div id="endbox"></div>`;
   } else {
-    inner = `<div class="projhead"><h2>Ranking en vivo</h2><div class="contador"><b>${n}</b> equipo${n===1?"":"s"}</div></div>${rankingHTML(true)}
-      <div class="projtools"><button class="btn ghost" id="fs">Pantalla completa</button></div>`;
+    const {teams} = allTeams(), max = Q.reduce((s,q)=>s+maxPts(q),0), fin = teams.filter(t=>t.d).length;
+    const avg = teams.length ? Math.round(teams.reduce((s,t)=>s+Math.max(0,t.x),0)/teams.length) : 0, avgD = teams.length ? (teams.reduce((s,t)=>s+bonusFor(t.x),0)/teams.length) : 0;
+    inner = `<div class="projhead"><h2>${T.ended ? "Resultados finales" : "Cierre de la sala"}</h2>${T.ended ? `<span class="labtag" style="--ph:var(--red)">Sala cerrada</span>` : ""}</div>
+      ${teams.length ? podiumHTML(teams) : `<p class="vacio">Todavía no hay equipos en esta sala.</p>`}
+      <div class="statrow"><div><b>${teams.length}</b><span>equipos</span></div><div><b>${fin}</b><span>terminaron</span></div><div><b>${avg}</b><span>puntos en promedio (de ${max})</span></div><div><b>+${avgD.toFixed(2).replace(".", ",")}</b><span>décimas en promedio</span></div></div>
+      ${rankingHTML(false, asRankList(teams), "rankboard3")}
+      <div class="projtools">${T.ended ? `<button class="btn go big" id="xlsx2" ${teams.length?"":"disabled"}>Descargar Excel</button><button class="btn ghost" id="reopen">Reabrir sala</button>` : `<button class="btn danger big" id="endsala">Finalizar sala</button>`}<button class="btn ghost" id="fs">Pantalla completa</button></div><div id="endbox"></div>`;
   }
   $("#tpanel").innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;padding-top:6px">
-      <div class="stages" role="group" aria-label="Momento de la sesión">${[["sala","Sala de espera"],["ranking","Ranking en vivo"]].map(([s,t])=>`<button aria-pressed="${st===s}" data-stage="${s}">${t}</button>`).join("")}</div>
+      <div class="stages" role="group" aria-label="Momento de la sesión">${[["sala","Sala de espera"],["ranking","Ranking en vivo"],["cierre","Cierre y resultados"]].map(([s,t])=>`<button aria-pressed="${st===s}" data-stage="${s}">${t}</button>`).join("")}</div>
       <section class="proj" id="proj">${inner}</section>
       ${st==="sala" ? `<p class="muted" style="color:var(--on2)">Clave de inicio de la sala ${esc(T.sala)}: <b style="color:#fff">${esc(startKey(T.sala))}</b>. ${LIVE.on ? "Con la conexión en vivo los celulares arrancan solos al tocar Iniciar; la clave queda de respaldo." : "Si un equipo llega tarde, basta con que la escriba cuando llegue."}</p>` : ""}</div>`;
-  if (st==="ranking") animateRanking(); else rankPos = {};
+  fillRankings($("#tpanel"));
+  const es = $("#endsala"); if (es) es.onclick = () => closeSalaConfirm($("#endbox"));
+  const ro = $("#reopen"); if (ro) ro.onclick = async () => { await LIVE.patchEstado(T.sala, {ended:false}); T.ended = false; saveT(); toast("Sala reabierta: los equipos pueden seguir"); tProjector(); };
+  const x2 = $("#xlsx2"); if (x2) x2.onclick = () => downloadXLSX(allTeams().teams);
   app().querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{ T.stage=b.dataset.stage; saveT(); tProjector(); });
   const ts = $("#tstart"); if (ts) ts.onclick = () => { LIVE.setStarted(T.sala, true); countdown(() => { T.started = true; saveT(); tProjector(); }, "¡Comienza!"); };
   const tu = $("#tunstart"); if (tu) tu.onclick = () => { T.started = false; saveT(); tProjector(); };
@@ -2377,8 +2506,7 @@ function parseResults(text){
   return { teams:Object.values(out).sort((a,b)=>b.x-a.x), bad };
 }
 function tResults(){
-  const parsed = parseResults(T.paste||""), bad = parsed.bad, liveT = liveTeamsAsResults();
-  const seen = new Set(liveT.map(t => t.e + "|" + t.s)), teams = [...liveT, ...parsed.teams.filter(t => !seen.has(t.e + "|" + t.s))].sort((x,y)=>y.x-x.x);
+  const {teams, bad, liveT} = allTeams();
   const other = teams.filter(t=>t.s!==T.sala).length;
   let table = "", stats = "";
   const phaseSum = (t,p) => Q.reduce((a,q,qi)=>a+(q.ph===p&&t.r[qi]?t.r[qi][0]:0),0);
@@ -2404,7 +2532,7 @@ function tResults(){
       <div class="chips">${bonoNiveles().map(l=>`<span class="chip tema">+${String(l.v).replace(".", ",")} ${l.pct ? "desde el " + String(l.pct).replace(".", ",") + " % (" + Math.ceil(l.pct/100*Q.reduce((s,q)=>s+maxPts(q),0)) + " pts)" : "por participar"}</span>`).join("")}</div>
       <div class="row"><label class="f" for="bonomax" style="flex-direction:row;align-items:center;gap:10px">Bono máximo<select class="t" id="bonomax" style="width:110px">${[0.2,0.3,0.4,0.5].map(v=>`<option value="${v}" ${Math.abs(bonoMax()-v)<1e-9?"selected":""}>${String(v).replace(".", ",")}</option>`).join("")}</select></label>
         <button class="btn go" id="xlsx" ${teams.length?"":"disabled"}>Descargar Excel</button><span class="muted">${teams.reduce((s,t)=>s+(t.m.length||1),0)} estudiantes</span></div></div>
-    <div class="card"><span class="eyebrow">Ranking de la sala ${esc(T.sala)}</span>${rankingHTML(false, teams.map(t => ({id:t.e + "|" + t.s, team:t.e, members:t.m, av:t.av, score:t.x, done:!!t.d, started:true, phase:t.r.reduce((p,x,qi)=>x?Math.max(p,Q[qi].ph):p,1)})))}
+    <div class="card"><span class="eyebrow">Ranking de la sala ${esc(T.sala)}</span>${rankingHTML(false, asRankList(teams))}
       ${LIVE.on ? `<div class="row"><button class="btn ghost" id="clrsala">Borrar los datos de esta sala en Firebase</button></div><div id="clrbox"></div>` : ""}</div>
     <details class="card" ${LIVE.on?"":"open"}><summary style="cursor:pointer;font:600 17px var(--f-juego)">${LIVE.on ? "Sumar equipos que enviaron su mensaje (respaldo sin conexión)" : "Reunir resultados con los mensajes de los equipos"}</summary>
       <p>Pega aquí los mensajes que te envían los equipos (puedes pegar varios juntos o el chat completo exportado). Cada mensaje trae un código que empieza por <span class="mono">EXTR4.</span> y el panel lo lee solo.</p>
@@ -2412,6 +2540,7 @@ function tResults(){
       <div class="row"><button class="btn primary" id="readr">Leer resultados</button><button class="btn ghost" id="csv" ${teams.length?"":"disabled"}>Descargar CSV</button><button class="btn ghost" id="csvc" ${teams.length?"":"disabled"}>Copiar CSV</button>
         <span class="muted">${teams.length} equipos${liveT.length?` (${liveT.length} en vivo)`:""}${bad?` · ${bad} códigos dañados o alterados`:""}${other?` · ${other} de otra sala`:""}</span></div></details>
     ${table}${stats}</div>`;
+  fillRankings($("#tpanel"));
   $("#readr").onclick = () => { T.paste = $("#paste").value; saveT(); tResults(); };
   const cs = $("#clrsala"); if (cs) cs.onclick = () => { $("#clrbox").innerHTML = `<div class="confirm"><p>Se borrarán de Firebase los equipos y puntajes de la sala ${esc(T.sala)}. Descarga antes el CSV si lo necesitas.</p><div class="row"><button class="btn primary" id="clry">Sí, borrar</button><button class="btn ghost" id="clrn">Cancelar</button></div></div>`;
     $("#clry").onclick = async () => { await LIVE.clearSala(T.sala); T.live = {}; toast("Datos de la sala borrados"); tResults(); }; $("#clrn").onclick = () => { $("#clrbox").innerHTML = ""; }; };
@@ -2431,8 +2560,8 @@ function tResults(){
 }
 /* Bono para el parcial (nota sobre 5,0): niveles de 0,1. Con máximo 0,3: jugar = 0,1 · 37,5 % = 0,2 · 75 % = 0,3. */
 const bonoMax = () => T.bono ?? 0.3;
-function bonoNiveles(){ const n = Math.max(1, Math.round(bonoMax()*10)); return Array.from({length:n}, (_,k) => ({v:(k+1)/10, pct: n===1 ? 0 : Math.round(1000 * 0.75 * k/(n-1))/10})); }
-const bonusFor = x => { const max = Q.reduce((s,q)=>s+maxPts(q),0), p = 100 * Math.max(0, x) / max; let b = 0; bonoNiveles().forEach(l => { if (p >= l.pct) b = l.v; }); return Math.round(b*10)/10; };
+function bonoNiveles(bmax){ const n = Math.max(1, Math.round((bmax ?? bonoMax())*10)); return Array.from({length:n}, (_,k) => ({v:(k+1)/10, pct: n===1 ? 0 : Math.round(1000 * 0.75 * k/(n-1))/10})); }
+const bonusFor = (x, bmax) => { const max = Q.reduce((s,q)=>s+maxPts(q),0), p = 100 * Math.max(0, x) / max; let b = 0; bonoNiveles(bmax).forEach(l => { if (p >= l.pct) b = l.v; }); return Math.round(b*10)/10; };
 async function downloadXLSX(teams){
   const max = Q.reduce((s,q)=>s+maxPts(q),0), b = String(bonoMax()).replace(".", ",");
   const est = [["Sala","Equipo","Integrante","Puntaje del equipo","Puntaje máximo","Porcentaje","Décimas para el parcial (máx. " + b + ")","Terminó","Tiempo (min)"]];
