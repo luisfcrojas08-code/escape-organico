@@ -391,7 +391,7 @@ svg.drawn text.cnum{fill:var(--ink2);font-size:12px;font-weight:500}
 .wheel.wide button.arr{width:72px}
 .pair .why{font-size:15px;color:var(--ink2)}
 .sketchwrap{border:3px solid var(--ink);border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 4px 0 var(--ink)}
-.sketch{width:100%;height:min(440px,62vh);background:#fff;touch-action:none;color:#0A1620}
+.sketch{width:100%;height:min(580px,74vh);background:#fff;touch-action:none;color:#0A1620}
 .sketch canvas{touch-action:none}
 .sketchhelp{border:0;border-radius:14px;padding:12px 14px;background:var(--soft);font-size:15px;color:var(--ink)}
 .sketchhelp summary{cursor:pointer;font:600 16px var(--f-juego)}
@@ -666,6 +666,18 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .statrow b{font:700 30px var(--f-juego);color:#fff}.statrow span{font-size:13px;color:var(--on2)}
 @media (max-width:600px){.rk{grid-template-columns:34px 1fr auto;gap:8px}.rk .est{display:none}.rk .pos{font-size:20px}}
 @media (prefers-reduced-motion:reduce){.runner,.runner.moving,.fillbar::after{animation:none}.fillbar,.runner{transition:none}}
+
+.tsk{display:flex;flex-direction:column;height:100%;background:#fff}
+.tsk-bar{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:#f3f1fb;border-bottom:2px solid #e2ddf5}
+.tsk-b{min-width:50px;min-height:50px;border:2px solid #d6d0ee;background:#fff;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font:700 19px/1 Arial,Helvetica,sans-serif;color:#14102b;padding:3px 7px;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tsk-b small{font:600 10px Arial,Helvetica,sans-serif;color:inherit;opacity:.8}
+.tsk-b[aria-pressed=true]{background:#2F9BFF;color:#fff;border-color:#1b6fc0}
+.tsk-b:active{transform:translateY(1px)}
+.tsk-sep{width:2px;align-self:stretch;background:#e2ddf5;border-radius:2px}
+.tsk-hint{font:500 13px/1.3 Arial,Helvetica,sans-serif;color:#4b4668;padding:6px 10px;min-height:22px}
+.tsk-hint.warn{color:#c2410c;font-weight:700}
+.tsk-svg{flex:1;min-height:280px;width:100%;touch-action:none;background:#fff;display:block;user-select:none;-webkit-user-select:none}
+@media (max-width:640px){.tsk-bar{gap:4px;padding:6px}.tsk-b{min-width:44px;min-height:44px;padding:2px 5px;font-size:17px;border-radius:10px}.tsk-b small{font-size:9px}.tsk-sep{display:none}}
 </style>
 </head>
 <body>
@@ -3446,6 +3458,348 @@ var qrcode = function() {
     return qrcode;
 }));
 
+/* ============================================================
+   TouchSketch · editor de estructuras táctil y estable
+   - Tocar un átomo agrega un enlace en zigzag (120°), siempre del mismo largo.
+   - Arrastrar desde un átomo elige la dirección (pasos de 30°); soltar sobre
+     otro átomo cierra un anillo.
+   - Tocar un enlace: sencillo → doble → triple (herramienta Enlace),
+     o cuña / rayado (herramientas de estereoquímica).
+   - Pellizcar con dos dedos: zoom y desplazamiento.
+   Interfaz compatible con la parte del juego que usaba OCL.CanvasEditor:
+   getMolecule() · setMolecule(m) · setOnChangeListener(fn) · moleculeChanged()
+   destroy() · isDestroyed
+   ============================================================ */
+class TouchSketch {
+  constructor(el, opts = {}) {
+    this.el = el; this.ro = !!opts.readOnly; this.isDestroyed = false;
+    this.atoms = []; this.bonds = []; this.hist = []; this.tool = "bond"; this.el_ = "C"; this.fn = null;
+    this.L = 40; // largo de enlace en unidades del lienzo
+    this.vb = { x: -200, y: -150, w: 400, h: 300 };
+    this.ptrs = new Map(); this.drag = null; this.pinch = null; this.last = null;
+    this.build();
+  }
+  /* ---------------- interfaz ---------------- */
+  build() {
+    const tb = this.ro ? "" : `<div class="tsk-bar" role="toolbar" aria-label="Herramientas de dibujo">
+      ${[["bond", "Enlace", "／"], ["wedge", "Cuña", "▶"], ["hash", "Rayado", "┈"], ["ring", "Benceno", "⬡"], ["erase", "Borrar", "⌫"]].map(([t, n, ic]) =>
+        `<button type="button" class="tsk-b" data-tool="${t}" aria-pressed="${t === "bond"}"><span>${ic}</span><small>${n}</small></button>`).join("")}
+      <span class="tsk-sep"></span>
+      ${["C", "H", "O", "N", "Cl", "Br", "I"].map(e => `<button type="button" class="tsk-b tsk-el" data-el="${e}"><span>${e}</span></button>`).join("")}
+      <span class="tsk-sep"></span>
+      <button type="button" class="tsk-b" data-act="undo"><span>↶</span><small>Deshacer</small></button>
+      <button type="button" class="tsk-b" data-act="clear"><span>✕</span><small>Limpiar</small></button>
+      <button type="button" class="tsk-b" data-act="fit"><span>⤢</span><small>Centrar</small></button>
+    </div>`;
+    this.el.innerHTML = `<div class="tsk">${tb}<div class="tsk-hint" aria-live="polite"></div>
+      <svg class="tsk-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Lienzo de dibujo"></svg></div>`;
+    this.svg = this.el.querySelector("svg");
+    this.hintEl = this.el.querySelector(".tsk-hint");
+    if (!this.ro) {
+      this.el.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => this.setTool(b.dataset.tool));
+      this.el.querySelectorAll("[data-el]").forEach(b => b.onclick = () => { this.el_ = b.dataset.el; this.setTool("atom"); });
+      this.el.querySelector('[data-act="undo"]').onclick = () => this.undo();
+      this.el.querySelector('[data-act="clear"]').onclick = () => { if (!this.atoms.length) return; this.snap(); this.atoms = []; this.bonds = []; this.changed(); };
+      this.el.querySelector('[data-act="fit"]').onclick = () => { this.fit(); this.render(); };
+      const s = this.svg;
+      s.addEventListener("pointerdown", e => this.down(e));
+      s.addEventListener("pointermove", e => this.move(e));
+      s.addEventListener("pointerup", e => this.up(e));
+      s.addEventListener("pointercancel", e => this.up(e, true));
+      s.addEventListener("wheel", e => { e.preventDefault(); this.zoomAt(this.toW(e), e.deltaY > 0 ? 1.12 : 1 / 1.12); this.render(); }, { passive: false });
+    }
+    this.ro0 = new ResizeObserver(() => this.render()); this.ro0.observe(this.el);
+    this.hint(); this.render();
+  }
+  setTool(t) {
+    this.tool = t;
+    this.el.querySelectorAll("[data-tool]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tool === t));
+    this.el.querySelectorAll("[data-el]").forEach(b => b.setAttribute("aria-pressed", t === "atom" && b.dataset.el === this.el_));
+    this.hint();
+  }
+  hint() {
+    const H = {
+      bond: this.atoms.length ? "Toquen un átomo para alargar la cadena · arrastren para escoger la dirección · toquen un enlace para hacerlo doble o triple" : "Toquen el lienzo para poner el primer carbono",
+      wedge: "Toquen un enlace para volverlo cuña (hacia ustedes). Otro toque lo deja normal.",
+      hash: "Toquen un enlace para volverlo rayado (hacia atrás). Otro toque lo deja normal.",
+      ring: "Toquen un átomo para colgarle un benceno, o el lienzo vacío para ponerlo suelto.",
+      erase: "Toquen un átomo o un enlace para borrarlo.",
+      atom: `Toquen un átomo para cambiarlo por ${this.el_}, o el lienzo para poner un ${this.el_} suelto.`,
+    };
+    if (this.hintEl) this.hintEl.textContent = this.ro ? "" : H[this.tool];
+  }
+  /* ---------------- coordenadas ---------------- */
+  toW(e) {
+    const r = this.svg.getBoundingClientRect(), v = this.vb;
+    return { x: v.x + (e.clientX - r.left) * v.w / r.width, y: v.y + (e.clientY - r.top) * v.h / r.height };
+  }
+  pxPerUnit() { const r = this.svg.getBoundingClientRect(); return r.width / this.vb.w || 1; }
+  zoomAt(p, f) {
+    const v = this.vb, nw = Math.min(1400, Math.max(120, v.w * f)), k = nw / v.w;
+    v.x = p.x - (p.x - v.x) * k; v.y = p.y - (p.y - v.y) * k; v.w = nw; v.h = v.h * k;
+  }
+  fit() {
+    const r = this.svg.getBoundingClientRect(), asp = (r.height || 300) / (r.width || 400);
+    if (!this.atoms.length) { const w0 = Math.min(400, Math.max(260, (r.width || 400) * 0.8)); this.vb = { x: -w0 / 2, y: -w0 / 2 * asp, w: w0, h: w0 * asp }; return; }
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const a of this.atoms) { x0 = Math.min(x0, a.x); y0 = Math.min(y0, a.y); x1 = Math.max(x1, a.x); y1 = Math.max(y1, a.y); }
+    const pad = this.L * 1.6, mw = Math.min(360, Math.max(260, (r.width || 400) * 0.8)); let w = Math.max(x1 - x0 + 2 * pad, mw), h = Math.max(y1 - y0 + 2 * pad, mw * 0.7);
+    if (h / w > asp) w = h / asp; else h = w * asp;
+    this.vb = { x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h };
+  }
+  /* ---------------- búsqueda ---------------- */
+  hitAtom(p, tolPx = 26) {
+    const tol = tolPx / this.pxPerUnit(); let best = -1, bd = tol;
+    this.atoms.forEach((a, i) => { const d = Math.hypot(a.x - p.x, a.y - p.y); if (d < bd) { bd = d; best = i; } });
+    return best;
+  }
+  hitBond(p, tolPx = 18) {
+    const tol = tolPx / this.pxPerUnit(); let best = -1, bd = tol;
+    this.bonds.forEach((b, i) => {
+      const A = this.atoms[b.a], B = this.atoms[b.b], dx = B.x - A.x, dy = B.y - A.y, l2 = dx * dx + dy * dy || 1;
+      const t = Math.max(0.15, Math.min(0.85, ((p.x - A.x) * dx + (p.y - A.y) * dy) / l2));
+      const d = Math.hypot(A.x + t * dx - p.x, A.y + t * dy - p.y); if (d < bd) { bd = d; best = i; }
+    });
+    return best;
+  }
+  nbrs(i) { return this.bonds.filter(b => b.a === i || b.b === i).map(b => b.a === i ? b.b : b.a); }
+  bondBetween(i, j) { return this.bonds.findIndex(b => (b.a === i && b.b === j) || (b.a === j && b.b === i)); }
+  valence(i) { return this.bonds.reduce((s, b) => s + ((b.a === i || b.b === i) ? b.o : 0), 0); }
+  /* dirección libre para un enlace nuevo desde el átomo i */
+  freeAngle(i) {
+    const a = this.atoms[i], ns = this.nbrs(i), angs = ns.map(j => Math.atan2(this.atoms[j].y - a.y, this.atoms[j].x - a.x));
+    let cand = [];
+    if (!ns.length) cand = [-Math.PI / 6];
+    else if (ns.length === 1) {
+      const j = ns[0], back = angs[0], nn = this.nbrs(j).filter(k => k !== i);
+      // zigzag: girar hacia el lado contrario del giro anterior
+      let s = 1;
+      if (nn.length) { const p = this.atoms[nn[0]], q = this.atoms[j]; const cross = (q.x - p.x) * (a.y - q.y) - (q.y - p.y) * (a.x - q.x); s = cross > 0 ? -1 : 1; }
+      const bondTriple = this.bonds[this.bondBetween(i, j)].o === 3;
+      cand = bondTriple ? [back + Math.PI] : [back + s * 2 * Math.PI / 3, back - s * 2 * Math.PI / 3];
+    } else {
+      const so = angs.slice().sort((x, y) => x - y); let gap = -1, mid = 0;
+      for (let k = 0; k < so.length; k++) { const x = so[k], y = k + 1 < so.length ? so[k + 1] : so[0] + 2 * Math.PI, g = y - x; if (g > gap) { gap = g; mid = x + g / 2; } }
+      cand = [mid, mid + 0.5, mid - 0.5];
+    }
+    for (const t of cand) { const p = { x: a.x + this.L * Math.cos(t), y: a.y + this.L * Math.sin(t) }; if (!this.crowded(p, i)) return t; }
+    for (let k = 0; k < 12; k++) { const t = cand[0] + k * Math.PI / 6; const p = { x: a.x + this.L * Math.cos(t), y: a.y + this.L * Math.sin(t) }; if (!this.crowded(p, i)) return t; }
+    return cand[0];
+  }
+  crowded(p, except) { return this.atoms.some((b, k) => k !== except && Math.hypot(b.x - p.x, b.y - p.y) < this.L * 0.55); }
+  /* ---------------- edición ---------------- */
+  snap() { this.hist.push(JSON.stringify([this.atoms, this.bonds])); if (this.hist.length > 60) this.hist.shift(); }
+  undo() { if (!this.hist.length) return; [this.atoms, this.bonds] = JSON.parse(this.hist.pop()); this.changed(); }
+  addAtom(x, y, el = "C") { this.atoms.push({ x, y, el }); return this.atoms.length - 1; }
+  addBond(a, b, o = 1) { if (a === b || this.bondBetween(a, b) >= 0) return -1; this.bonds.push({ a, b, o, s: 0 }); return this.bonds.length - 1; }
+  grow(i, ang) {
+    const a = this.atoms[i]; const t = ang ?? this.freeAngle(i);
+    const p = { x: a.x + this.L * Math.cos(t), y: a.y + this.L * Math.sin(t) };
+    const near = this.hitAtom(p, 1) >= 0 ? this.hitAtom(p, 1) : this.atoms.findIndex((b, k) => k !== i && Math.hypot(b.x - p.x, b.y - p.y) < this.L * 0.3);
+    if (near >= 0) { this.addBond(i, near); return near; }
+    const j = this.addAtom(p.x, p.y); this.addBond(i, j); return j;
+  }
+  benzene(i, p) {
+    let cx, cy, start;
+    if (i >= 0) { const a = this.atoms[i], t = this.freeAngle(i); cx = a.x + 2 * this.L * Math.cos(t); cy = a.y + 2 * this.L * Math.sin(t); start = t + Math.PI; }
+    else { cx = p.x; cy = p.y; start = Math.PI / 2; }
+    const ids = [];
+    for (let k = 0; k < 6; k++) { const t = start + k * Math.PI / 3; ids.push(this.addAtom(cx + this.L * Math.cos(t), cy + this.L * Math.sin(t))); }
+    for (let k = 0; k < 6; k++) this.addBond(ids[k], ids[(k + 1) % 6], k % 2 ? 1 : 2);
+    if (i >= 0) this.addBond(i, ids[0]);
+  }
+  removeAtom(i) {
+    this.bonds = this.bonds.filter(b => b.a !== i && b.b !== i).map(b => ({ ...b, a: b.a > i ? b.a - 1 : b.a, b: b.b > i ? b.b - 1 : b.b }));
+    this.atoms.splice(i, 1);
+  }
+  removeBond(k) {
+    const { a, b } = this.bonds[k]; this.bonds.splice(k, 1);
+    [a, b].sort((x, y) => y - x).forEach(i => { if (!this.nbrs(i).length && this.atoms[i].el === "C") this.removeAtom(i); });
+  }
+  /* ---------------- gestos ---------------- */
+  down(e) {
+    e.preventDefault(); this.svg.setPointerCapture?.(e.pointerId);
+    this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.ptrs.size === 2) { // pellizco
+      const [p, q] = [...this.ptrs.values()]; this.drag = null; this.render();
+      this.pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), c: { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, vb: { ...this.vb } };
+      return;
+    }
+    if (this.ptrs.size > 2) return;
+    const w = this.toW(e); this.drag = { start: w, sx: e.clientX, sy: e.clientY, atom: this.pick(w)[0], moved: false, cur: w };
+  }
+  move(e) {
+    if (!this.ptrs.has(e.pointerId)) return;
+    this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.pinch && this.ptrs.size === 2) {
+      const [p, q] = [...this.ptrs.values()], d = Math.hypot(p.x - q.x, p.y - q.y) || 1, c = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+      const r = this.svg.getBoundingClientRect(), v0 = this.pinch.vb, f = this.pinch.d / d;
+      const nw = Math.min(1400, Math.max(120, v0.w * f)), k = nw / v0.w;
+      const wx = v0.x + (this.pinch.c.x - r.left) * v0.w / r.width, wy = v0.y + (this.pinch.c.y - r.top) * v0.h / r.height;
+      this.vb = { w: nw, h: v0.h * k, x: wx - (c.x - r.left) * nw / r.width, y: wy - (c.y - r.top) * v0.h * k / r.height };
+      this.render(); return;
+    }
+    const D = this.drag; if (!D) return;
+    if (Math.hypot(e.clientX - D.sx, e.clientY - D.sy) > 14) D.moved = true;
+    D.cur = this.toW(e);
+    if (D.moved && D.atom < 0) { // arrastrar el lienzo vacío: desplazar
+      const r = this.svg.getBoundingClientRect(); this.vb.x -= (e.clientX - D.sx) * this.vb.w / r.width; this.vb.y -= (e.clientY - D.sy) * this.vb.h / r.height;
+      D.sx = e.clientX; D.sy = e.clientY; D.start = this.toW(e);
+    }
+    this.render();
+  }
+  up(e, cancel) {
+    this.ptrs.delete(e.pointerId);
+    if (this.pinch) { if (this.ptrs.size < 2) this.pinch = null; this.drag = null; return; }
+    const D = this.drag; this.drag = null; if (!D || cancel) { this.render(); return; }
+    if (D.moved && D.atom >= 0 && (this.tool === "bond" || this.tool === "atom")) { // arrastre desde un átomo
+      const a = this.atoms[D.atom], tgt = this.hitAtom(D.cur);
+      this.snap();
+      if (tgt >= 0 && tgt !== D.atom) { if (this.bondBetween(D.atom, tgt) < 0) this.addBond(D.atom, tgt); else this.hist.pop(); }
+      else { let t = Math.atan2(D.cur.y - a.y, D.cur.x - a.x); t = Math.round(t / (Math.PI / 6)) * Math.PI / 6; this.grow(D.atom, t); }
+      this.changed(); return;
+    }
+    if (D.moved) { this.render(); return; }
+    this.tap(D.start);
+  }
+  pick(p) { // átomo o enlace más cercano; el átomo gana solo si el toque cae cerca de él
+    const ppu = this.pxPerUnit(), atol = Math.min(26 / ppu, this.L * 0.34), btol = Math.max(18 / ppu, this.L * 0.3);
+    let ai = -1, ad = atol; this.atoms.forEach((a, i) => { const d = Math.hypot(a.x - p.x, a.y - p.y); if (d < ad) { ad = d; ai = i; } });
+    if (ai >= 0) return [ai, -1];
+    let bi = -1, bd = btol;
+    this.bonds.forEach((b, i) => { const A = this.atoms[b.a], B = this.atoms[b.b], dx = B.x - A.x, dy = B.y - A.y, l2 = dx * dx + dy * dy || 1;
+      const t = Math.max(0, Math.min(1, ((p.x - A.x) * dx + (p.y - A.y) * dy) / l2)), d = Math.hypot(A.x + t * dx - p.x, A.y + t * dy - p.y); if (d < bd) { bd = d; bi = i; } });
+    if (bi >= 0) return [-1, bi];
+    const a2 = this.hitAtom(p); return [a2, -1];
+  }
+  tap(p) {
+    const [ai, bi] = this.pick(p), t = this.tool;
+    if (t === "erase") { if (ai >= 0) { this.snap(); this.removeAtom(ai); this.changed(); } else if (bi >= 0) { this.snap(); this.removeBond(bi); this.changed(); } return; }
+    if (t === "ring") { this.snap(); this.benzene(ai, p); this.changed(); return; }
+    if (t === "atom") {
+      this.snap();
+      if (ai >= 0) this.atoms[ai].el = this.el_; else if (bi < 0) this.addAtom(p.x, p.y, this.el_); else { this.hist.pop(); return; }
+      this.changed(); return;
+    }
+    if (t === "wedge" || t === "hash") {
+      if (bi < 0) { this.flash(ai >= 0 ? "Toquen un enlace, no el átomo" : ""); return; }
+      const b = this.bonds[bi], code = t === "wedge" ? 1 : 6; this.snap();
+      if (b.o !== 1) b.o = 1;
+      if (b.s === code) b.s = 0; // segundo toque: vuelve a enlace sencillo
+      else {
+        b.s = code;
+        // la punta estrecha va en el carbono quiral: el extremo con más vecinos
+        if (this.nbrs(b.b).length > this.nbrs(b.a).length) [b.a, b.b] = [b.b, b.a];
+      }
+      this.changed(); return;
+    }
+    // herramienta Enlace
+    if (ai >= 0) { this.snap(); this.grow(ai); this.changed(); return; }
+    if (bi >= 0) { const b = this.bonds[bi]; this.snap(); b.s = 0; b.o = b.o === 3 ? 1 : b.o + 1; this.changed(); return; }
+    this.snap();
+    if (!this.atoms.length) { this.addAtom(p.x, p.y); } else { const i = this.addAtom(p.x, p.y); this.grow(i); }
+    this.changed();
+  }
+  flash(msg) { if (!msg || !this.hintEl) return; const old = this.hintEl.textContent; this.hintEl.textContent = msg; this.hintEl.classList.add("warn"); setTimeout(() => { this.hintEl.classList.remove("warn"); this.hint(); }, 1400); }
+  keepInView() { // si algo quedó fuera de la vista, reencuadrar
+    const v = this.vb, m = this.L * 0.6;
+    if (this.atoms.some(a => a.x < v.x + m || a.x > v.x + v.w - m || a.y < v.y + m || a.y > v.y + v.h - m)) this.fit();
+  }
+  changed() { this.keepInView(); this.hint(); this.render(); if (this.fn) try { this.fn({ isUserEvent: true }); } catch (e) {} }
+  /* ---------------- dibujo ---------------- */
+  hCount(i) {
+    const a = this.atoms[i], V = { C: 4, N: 3, O: 2, H: 1, Cl: 1, Br: 1, I: 1 }[a.el] ?? 0; return Math.max(0, V - this.valence(i));
+  }
+  render() {
+    if (this.isDestroyed) return;
+    const r = this.svg.getBoundingClientRect(); if (r.width && !this._sized) { this._sized = true; this.fit(); }
+    if (r.width) { const asp = r.height / r.width; this.vb.h = this.vb.w * asp; }
+    const v = this.vb, L = this.L, ink = "#14102b", sel = "#2F9BFF";
+    let g = "";
+    const lab = i => this.atoms[i].el !== "C" || !this.nbrs(i).length;
+    const trim = (A, B, i, j) => { // acortar enlaces junto a las etiquetas
+      const dx = B.x - A.x, dy = B.y - A.y, l = Math.hypot(dx, dy) || 1, u = { x: dx / l, y: dy / l }, s0 = lab(i) ? 11 : 0, s1 = lab(j) ? 11 : 0;
+      return [{ x: A.x + u.x * s0, y: A.y + u.y * s0 }, { x: B.x - u.x * s1, y: B.y - u.y * s1 }, u];
+    };
+    this.bonds.forEach(b => {
+      const A = this.atoms[b.a], B = this.atoms[b.b]; const [p, q, u] = trim(A, B, b.a, b.b), n = { x: -u.y, y: u.x };
+      if (b.s === 1) g += `<path d="M${p.x} ${p.y}L${q.x + n.x * 5} ${q.y + n.y * 5}L${q.x - n.x * 5} ${q.y - n.y * 5}Z" fill="${ink}"/>`;
+      else if (b.s === 6) { for (let k = 1; k <= 7; k++) { const t = k / 7.5, w = 5 * t, cx = p.x + (q.x - p.x) * t, cy = p.y + (q.y - p.y) * t; g += `<line x1="${cx + n.x * w}" y1="${cy + n.y * w}" x2="${cx - n.x * w}" y2="${cy - n.y * w}" stroke="${ink}" stroke-width="1.6"/>`; } }
+      else {
+        const line = (o, sh) => `<line x1="${p.x + n.x * o + u.x * sh}" y1="${p.y + n.y * o + u.y * sh}" x2="${q.x + n.x * o - u.x * sh}" y2="${q.y + n.y * o - u.y * sh}" stroke="${ink}" stroke-width="2.2" stroke-linecap="round"/>`;
+        if (b.o === 1) g += line(0, 0);
+        else if (b.o === 2) {
+          // doble: segunda línea hacia el interior del anillo o hacia el lado con más vecinos
+          const ring = this.inRing(b.a, b.b); let side = 1;
+          if (ring) { const c = ring; side = ((c.x - A.x) * n.x + (c.y - A.y) * n.y) > 0 ? 1 : -1; g += line(0, 0) + line(6 * side, 5); }
+          else g += line(3, 0) + line(-3, 0);
+        } else g += line(0, 0) + line(5, 0) + line(-5, 0);
+      }
+    });
+    this.atoms.forEach((a, i) => {
+      if (!lab(i)) return;
+      const h = this.hCount(i), txt = a.el === "C" ? "CH" + (h > 1 ? "<tspan font-size='11' dy='4'>" + h + "</tspan>" : "") : a.el + (h ? "H" + (h > 1 ? "<tspan font-size='11' dy='4'>" + h + "</tspan>" : "") : "");
+      const col = { O: "#D8262C", N: "#2747C4", Cl: "#1E8E3E", Br: "#9A3412", I: "#6D28D9" }[a.el] || ink;
+      g += `<circle cx="${a.x}" cy="${a.y}" r="11" fill="#fff"/><text x="${a.x}" y="${a.y + 6}" text-anchor="middle" font-size="17" font-weight="700" font-family="Arial,Helvetica,sans-serif" fill="${col}">${txt}</text>`;
+    });
+    // vista previa del arrastre
+    const D = this.drag;
+    if (D && D.moved && D.atom >= 0 && (this.tool === "bond" || this.tool === "atom")) {
+      const a = this.atoms[D.atom], tg = this.hitAtom(D.cur); let x2, y2;
+      if (tg >= 0 && tg !== D.atom) { x2 = this.atoms[tg].x; y2 = this.atoms[tg].y; }
+      else { let t = Math.atan2(D.cur.y - a.y, D.cur.x - a.x); t = Math.round(t / (Math.PI / 6)) * Math.PI / 6; x2 = a.x + L * Math.cos(t); y2 = a.y + L * Math.sin(t); }
+      g += `<line x1="${a.x}" y1="${a.y}" x2="${x2}" y2="${y2}" stroke="${sel}" stroke-width="3" stroke-dasharray="5 4" stroke-linecap="round"/><circle cx="${x2}" cy="${y2}" r="7" fill="${sel}" opacity=".35"/>`;
+    }
+    if (!this.ro) this.atoms.forEach((a, i) => { if (!lab(i)) g += `<circle cx="${a.x}" cy="${a.y}" r="4.5" fill="${sel}" opacity=".28"/>`; });
+    this.svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
+    this.svg.innerHTML = g || (this.ro ? "" : `<text x="${v.x + v.w / 2}" y="${v.y + v.h / 2}" text-anchor="middle" font-size="15" fill="#8a86a3" font-family="Arial,sans-serif">Toquen aquí para empezar</text>`);
+  }
+  inRing(i, j) { // centro del anillo de 6 que contiene el enlace (si existe)
+    for (const ring of this.rings6()) if (ring.includes(i) && ring.includes(j)) {
+      return { x: ring.reduce((s, k) => s + this.atoms[k].x, 0) / 6, y: ring.reduce((s, k) => s + this.atoms[k].y, 0) / 6 };
+    }
+    return null;
+  }
+  rings6() {
+    const res = [], key = new Set(), N = this.atoms.length;
+    const walk = (start, u, path) => {
+      if (path.length === 6) { if (this.nbrs(u).includes(start)) { const k = [...path].sort((a, b) => a - b).join(","); if (!key.has(k)) { key.add(k); res.push([...path]); } } return; }
+      for (const v of this.nbrs(u)) if (v > start && !path.includes(v)) { path.push(v); walk(start, v, path); path.pop(); }
+    };
+    for (let s = 0; s < N; s++) walk(s, s, [s]);
+    return res;
+  }
+  /* ---------------- conversión con OpenChemLib ---------------- */
+  toMolfile() {
+    const pad = (s, n) => String(s).padStart(n), f = x => (x).toFixed(4).padStart(10), sc = 1.5 / this.L;
+    let m = "\n  TouchSketch\n\n" + pad(this.atoms.length, 3) + pad(this.bonds.length, 3) + "  0  0  1  0  0  0  0  0999 V2000\n"; // 1 = quiral absoluto
+    for (const a of this.atoms) m += f(a.x * sc) + f(-a.y * sc) + f(0) + " " + a.el.padEnd(3) + " 0  0  0  0  0  0  0  0  0  0  0  0\n";
+    for (const b of this.bonds) m += pad(b.a + 1, 3) + pad(b.b + 1, 3) + pad(b.o, 3) + pad(b.s, 3) + "\n";
+    return m + "M  END\n";
+  }
+  getMolecule() {
+    if (!this.atoms.length) { try { return new OCL.Molecule(0, 0); } catch (e) { return OCL.Molecule.fromSmiles("C"); } }
+    return OCL.Molecule.fromMolfile(this.toMolfile());
+  }
+  fromMolfileText(txt) {
+    const ln = txt.split(/\r?\n/), na = parseInt(ln[3].slice(0, 3)), nb = parseInt(ln[3].slice(3, 6));
+    const at = [], bd = []; let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, bl = 0;
+    for (let k = 0; k < na; k++) { const l = ln[4 + k]; at.push({ x: parseFloat(l.slice(0, 10)), y: -parseFloat(l.slice(10, 20)), el: l.slice(31, 34).trim() }); }
+    for (let k = 0; k < nb; k++) { const l = ln[4 + na + k]; bd.push({ a: parseInt(l.slice(0, 3)) - 1, b: parseInt(l.slice(3, 6)) - 1, o: parseInt(l.slice(6, 9)), s: parseInt(l.slice(9, 12)) || 0 }); }
+    bd.forEach(b => bl += Math.hypot(at[b.a].x - at[b.b].x, at[b.a].y - at[b.b].y)); const k = bd.length ? this.L / (bl / bd.length) : 1;
+    at.forEach(a => { a.x *= k; a.y *= k; }); bd.forEach(b => { if (b.s !== 1 && b.s !== 6) b.s = 0; if (b.o > 3) b.o = 1; });
+    this.atoms = at.filter(a => a.el !== "H" || true); this.bonds = bd;
+  }
+  setMolecule(m) { try {
+      let c = m;
+      try { let z = true; for (let i = 0; i < c.getAllAtoms(); i++) if (c.getAtomX(i) || c.getAtomY(i)) { z = false; break; }
+        if (z && c.getAllAtoms()) { c = OCL.Molecule.fromIDCode(c.getIDCode()); c.inventCoordinates(); try { c.setStereoBondsFromParity(); } catch (e) {} } } catch (e) {}
+      this.fromMolfileText(c.toMolfile()); } catch (e) { this.atoms = []; this.bonds = []; } this._sized = false; this.render(); }
+  setOnChangeListener(fn) { this.fn = fn; }
+  moleculeChanged() { this.render(); }
+  destroy() { this.isDestroyed = true; try { this.ro0.disconnect(); } catch (e) {} this.el.innerHTML = ""; }
+}
+
 /* ================= TEMAS DEL PROGRAMA Y OBJETOS DEL LABORATORIO ================= */
 const TEMAS = {"4.1":"Concepto de aromaticidad","4.2":"Nomenclatura","4.3":"Mecanismo de SEAr","4.4":"Activantes y desactivantes","4.5":"Núcleos de interés biológico",
   "5.1":"Quiralidad","5.2":"Importancia biológica","5.3":"Representación 3D","5.4":"Centros quirales","5.7":"Configuración R/S","5.8":"Enantiómeros y diastereómeros","5.9":"Compuestos meso",
@@ -3679,7 +4033,7 @@ document.addEventListener("pointerdown", e => {
 /* ================= EN VIVO (Firebase Realtime Database, opcional) =================
    Para activarlo, pega aquí la configuración de tu proyecto de Firebase (ver la guía).
    Sin configuración el juego funciona igual, con la clave de inicio y el mensaje de resultados. */
-const APP_VERSION = "6.5";
+const APP_VERSION = "6.6";
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAdVsjSnywjsFuHGxLykl4coDFNQDqLgWA",
   authDomain: "escape-organico.firebaseapp.com",
@@ -4400,12 +4754,11 @@ function sketchBody(q, r){
   let h = `<div class="sketchwrap"><div class="sketch" id="sketch"><p class="muted" style="padding:16px">Cargando el editor de estructuras…</p></div></div>`;
   if (!r){
     h += `<details class="sketchhelp"><summary>Cómo usar el editor</summary><ul>
-      <li>Elijan la herramienta de enlace (línea) y toquen el lienzo: cada toque sobre un átomo agrega un enlace nuevo.</li>
-      <li>Para un oxígeno, elijan <b>O</b> y toquen el átomo que quieren cambiar. Para un doble enlace, toquen dos veces el enlace con la herramienta de enlace.</li>
-      <li>La <b>cuña llena</b> es un enlace hacia ustedes y la <b>línea punteada</b>, hacia atrás. Tóquenlas y luego toquen el enlace que quieren cambiar.</li>
-      <li>La X roja borra todo; la flecha curva deshace.</li>
-      <li>Todos los enlaces nuevos quedan del mismo largo. Si el dibujo quedó desordenado, usen «Ordenar dibujo».</li></ul></details>
-      <div class="row"><button class="btn ghost" id="sktidy" type="button">Ordenar dibujo</button></div>
+      <li>Toquen el lienzo para poner el primer carbono. Cada toque sobre un átomo alarga la cadena en zigzag; arrastren desde un átomo para escoger la dirección.</li>
+      <li>Toquen un enlace para volverlo doble y luego triple.</li>
+      <li>Para cambiar un átomo, elijan <b>O</b>, <b>N</b>, <b>Br</b>… y tóquenlo. Los H se ponen solos; el botón <b>H</b> sirve para dibujar un H en cuña.</li>
+      <li><b>Cuña</b> (hacia ustedes) y <b>Rayado</b> (hacia atrás): elíjanlos y toquen el enlace. Otro toque lo deja normal.</li>
+      <li>Con dos dedos se hace zoom. <b>Deshacer</b>, <b>Limpiar</b> y <b>Centrar</b> están en la barra.</li></ul></details>
       <p id="skerr" hidden style="color:var(--red)"></p><button class="btn primary big block" id="sksend">Enviar respuesta</button>`;
   } else {
     const ck = (ok, t) => `<li><b class="${ok?"y":"n"}">${ok?"BIEN":"REVISAR"}</b>${t}</li>`;
@@ -4424,18 +4777,12 @@ function mountSketch(q){
   if (!window.OCL){ setTimeout(()=>{ if (sheetQ===q && document.getElementById("sketch")) mountSketch(q); }, 300); return; }
   el.innerHTML = "";
   const r = S.res[q.id], pp = pend(q);
-  sketchEd = new OCL.CanvasEditor(el, { readOnly: !!r });
+  sketchEd = new TouchSketch(el, { readOnly: !!r });
   const saved = r ? r.mol : null;   // el equipo dibuja siempre desde cero
   if (saved){ try{ sketchEd.setMolecule(OCL.Molecule.fromIDCode(saved.idCode, saved.coordinates)); }catch(e){} }
-  if (!r) sketchEd.setOnChangeListener(ev => { try{
+  if (!r) sketchEd.setOnChangeListener(() => { try{
       const m = sketchEd.getMolecule();
-      if (ev && ev.isUserEvent && snapBonds(m)) { sketchEd.moleculeChanged(); }
       pp.mol = m.getAllAtoms() ? m.getIDCodeAndCoordinates() : null; save(); }catch(e){} });
-  const tidy = document.getElementById("sktidy"); if (tidy) tidy.onclick = () => { try{
-      const m = sketchEd.getMolecule(); if (!m.getAllAtoms()) return;
-      const c = OCL.Molecule.fromIDCode(m.getIDCode(), true); const f = STD_BOND / (c.getAverageBondLength() || 1);
-      for (let i=0;i<c.getAllAtoms();i++){ c.setAtomX(i, c.getAtomX(i)*f); c.setAtomY(i, c.getAtomY(i)*f); }
-      sketchEd.setMolecule(c); pp.mol = c.getIDCodeAndCoordinates(); save(); }catch(e){ toast("No se pudo ordenar el dibujo"); } };
 }
 function gradeSketch(q){
   const m = sketchEd && sketchEd.getMolecule(); const er = $("#skerr");
